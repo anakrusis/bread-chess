@@ -1,5 +1,6 @@
 // Chess server
 
+var config = require('./config.js');
 var game = require('./game.js');
 
 class Player {
@@ -10,7 +11,7 @@ class Player {
 	}
 }
 
-class Server {
+class GameServer {
 	
 	constructor(){
 		
@@ -30,10 +31,9 @@ class Server {
 		
 		this.games = {};
 		this.players = {};
-		this.MAX_PLAYERS = 16;
 	}
 	init(){
-		console.log("Starting server...\n")
+		console.log("Starting server on port " + config.PORT + "\n")
 		
 		// Initialize game propertys
 		this.players = {};
@@ -61,23 +61,41 @@ class Server {
 			}
 		});
 		
-		// Initialize event handlers
-		this.io = require('socket.io')( 16160 ); // <- a reference to the funny chess meme "161660" but unfortunately that number is too large to use as a port number, therefore this is the next best thing.
+		const { Server } = require("socket.io");
+
+		this.io = new Server(config.PORT, { 
+			cors: {
+				origin: "http://127.0.0.1:8887",
+				allowedHeaders: ["my-custom-header"],
+				credentials: true
+			} 
+		});
 		this.io.on('connection', function (socket) {
 			
-			if (Object.keys(server.players).length >= server.MAX_PLAYERS){ return; }
+			if (Object.keys(gameserver.players).length >= gameserver.MAX_PLAYERS){ return; }
 	
 			var playerJoining = new Player();
 			
-			this.emit("playerJoin", playerJoining, server.players, server.pieces);
+			this.emit("playerJoin", playerJoining, gameserver.players, gameserver.pieces);
 			
 			socket.on("playerAddSocketAndName", function (playerid, socketid, nama) {
 						
-				server.players[playerJoining.id] = playerJoining;				
-				server.players[playerid].socket = socketid;			
+				gameserver.players[playerJoining.id] = playerJoining;				
+				gameserver.players[playerid].socket = socketid;			
 				console.log(playerJoining.name + " has joined the server (ID: " + playerJoining.id + ")" )
 				
 				// here is where we will matchmake the player to a game
+				for (var i = 0; i < this.games.length; i++){
+					var g = this.games[i];
+					
+					// if there is an empty game then randomly assign the first player to either black or white
+					if (!g.playerw && !g.playerb){
+					
+					}else{
+						
+					}
+				}
+				// if there is no games available then make a new game
 				
 				//server.io.emit("playerJoin", playerJoining, server.players, server.pieces);
 				
@@ -85,6 +103,7 @@ class Server {
 				
 			});
 			
+			// when a player tries to move a piece
 			socket.on("pieceMoveRequest", function(pieceuuid, targetx, targety){
 				
 				var originalx = server.pieces[pieceuuid].x;
@@ -128,91 +147,11 @@ class Server {
 		
 		});
 		
-		setInterval(()=> { this.update() }, 50);
+		setInterval(()=> { this.update() }, 1000 / config.TICKS_PER_SECOND);
 	}
 	
 	update(){
 		
-	}
-	
-	// Tries to find a empty 8x8 chunk to spawn the player in, spiraling outwards from the center (0,0).
-	
-	spawnPlayer( player ){
-		
-		// dim: length in either dimension of a spiral arm, the progress on how far along stored in dimprogress
-		// parity flips coeff between negative and positive on completion of a dim
-		var dim = 0; var dimprogress = 0; var parity = 0;
-		var coeff = 1;
-		var chunkx = 0; var chunky = 0;
-		
-		// 100 attempts to find a player spawn chunk
-		for ( var q = 0; q < 100; q++){
-			
-			if ( this.isChunkEmpty( chunkx, chunky ) ){
-				
-				var sx = 4 + chunkx * 8; var sy = 4 + chunky * 8;
-				this.spawnPiece( new Piece( sx - 0, sy - 0,"king",player.id) );
-				this.spawnPiece( new Piece( sx - 1, sy - 0,"queen",player.id) );
-				this.spawnPiece( new Piece( sx + 1, sy - 0,"bishop",player.id) );
-				this.spawnPiece( new Piece( sx - 2, sy - 0,"bishop",player.id) );
-				this.spawnPiece( new Piece( sx + 2, sy - 0,"pawn",player.id) );
-				this.spawnPiece( new Piece( sx - 3, sy - 0,"pawn",player.id) );
-				this.spawnPiece( new Piece( sx - 0, sy + 1,"rook",player.id) );
-				this.spawnPiece( new Piece( sx - 1, sy - 1,"rook",player.id) );
-				this.spawnPiece( new Piece( sx - 1, sy + 1,"knight",player.id) );
-				this.spawnPiece( new Piece( sx - 0, sy - 1,"knight",player.id) );
-				this.spawnPiece( new Piece( sx + 1, sy + 1,"pawn",player.id) );
-				this.spawnPiece( new Piece( sx - 2, sy + 1,"pawn",player.id) );
-				this.spawnPiece( new Piece( sx + 1, sy - 1,"pawn",player.id) );
-				this.spawnPiece( new Piece( sx - 2, sy - 1,"pawn",player.id) );
-				this.spawnPiece( new Piece( sx - 0, sy - 2,"pawn",player.id) );
-				this.spawnPiece( new Piece( sx - 1, sy - 2,"pawn",player.id) );
-				this.spawnPiece( new Piece( sx - 0, sy + 2,"pawn",player.id) );
-				this.spawnPiece( new Piece( sx - 1, sy + 2,"pawn",player.id) );
-				break;
-			
-			}
-			
-			if (parity == 0){
-				chunky += (coeff);
-			}else{
-				chunkx += (coeff);
-			}
-			dimprogress++;
-			if (dimprogress >= dim){
-				
-				dimprogress = 0;
-				
-				if (parity == 0){
-					dim++;
-					parity = 1;
-				  
-				}else{
-					coeff *= -1;
-					parity = 0;
-				}
-			}
-		}
-	}
-	
-	isChunkEmpty(cx,cy){
-		for (var uuid in this.pieces){
-			var piece = this.pieces[uuid];
-			
-			if ( (Math.floor(piece.x / 8) == cx) && (Math.floor(piece.y / 8) == cy) ){
-				
-				return false;
-			}
-		}
-		return true;
-	}
-	
-	getPiece( x,y ){
-		for (var uuid in this.pieces){
-			var piece = this.pieces[uuid];
-			if (piece.x == x && piece.y == y){ return piece; }
-		}
-		return null;
 	}
 	
 	getValidSpaces( piece, moves ){
@@ -292,4 +231,4 @@ class Server {
 	}
 }
 
-var server = new Server(); server.init();
+var gameserver = new GameServer(); gameserver.init();
