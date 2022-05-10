@@ -54,6 +54,16 @@ class GameServer {
 					console.log("Stopping server...");
 					process.exit(0);
 					break;
+				
+				case "/list":
+					for (var index in gameserver.players){
+						console.log ( gameserver.players[index].name + " (ID: " + gameserver.players[index].id + ")" )
+					}
+					if (Object.keys(gameserver.players).length == 0){
+						console.log("No players online!")
+					}
+					console.log("");
+					break;
 					
 				// TODO: list all games and player names
 				case "/list":
@@ -76,32 +86,55 @@ class GameServer {
 	
 			var playerJoining = new Player();
 			
-			this.emit("playerJoin", playerJoining, gameserver.players, gameserver.pieces);
+			// this is used to tell the player that they have joined the server
+			//this.emit("playerJoin", playerJoining);
 			
-			socket.on("playerAddSocketAndName", function (playerid, socketid, nama) {
+			// once the player has joined, the server awaits this response from the client, associating the player object with a socket and a name
+			//socket.on("playerAddSocket", function (playerid, socketid) {
 						
-				gameserver.players[playerJoining.id] = playerJoining;				
-				gameserver.players[playerid].socket = socketid;			
-				console.log(playerJoining.name + " has joined the server (ID: " + playerJoining.id + ")" )
+			gameserver.players[playerJoining.id] = playerJoining;				
+			gameserver.players[playerJoining.id].socket = socket.id;			
+			console.log(playerJoining.name + " has joined the server (ID: " + playerJoining.id + ")" )
+			
+			// here is where we will matchmake the player to a game
+			for (var i = 0; i < gameserver.games.length; i++){
+				var g = gameserver.games[i];
 				
-				// here is where we will matchmake the player to a game
-				for (var i = 0; i < this.games.length; i++){
-					var g = this.games[i];
-					
-					// if there is an empty game then randomly assign the first player to either black or white
-					if (!g.playerw && !g.playerb){
-					
+				// if there is an empty game then randomly assign the first player to either black or white
+				if (!g.playerw && !g.playerb){
+					socket.join(g.id);
+					if (Math.random() >= 0.5){
+						g.playerw = playerJoining.id;
 					}else{
-						
+						g.playerb = playerJoining.id;
+					}
+					break;
+					
+				// if there is a game with one player waiting, then assign the player to the second place
+				// also start that game now
+				}else{
+					if (!g.playerw){
+						socket.join(g.id);
+						g.playerw = playerJoining.id;
+						g.start();
+						break;
+					}
+					if (!g.playerb){
+						socket.join(g.id);
+						g.playerb = playerJoining.id;
+						g.start();
+						break;
 					}
 				}
-				// if there is no games available then make a new game
+			}
+				// if there is no games available then create a new game, and randomly assign first player to black or white
+				
 				
 				//server.io.emit("playerJoin", playerJoining, server.players, server.pieces);
 				
 				//server.spawnPlayer ( playerJoining );
 				
-			});
+			//});
 			
 			// when a player tries to move a piece
 			socket.on("pieceMoveRequest", function(pieceuuid, targetx, targety){
@@ -138,11 +171,11 @@ class GameServer {
 			
 			socket.on("disconnect", function () {
 
-				var playerLeaving = server.getPlayerFromSocket(this);
+				var playerLeaving = gameserver.getPlayerFromSocket(this);
 				 
 				if (playerLeaving == -1){ return; };
 				
-				server.onPlayerLeave(playerLeaving);
+				gameserver.onPlayerLeave(playerLeaving);
 			});
 		
 		});

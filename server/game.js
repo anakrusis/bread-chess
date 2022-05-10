@@ -1,6 +1,8 @@
 // a single match between two players
 class Game {
 	constructor(){
+		this.id = Math.round(Math.random() * 100000);
+		
 		this.playerw = null; // they will be added in before the game starts. these are uuids
 		this.playerb = null;
 		
@@ -14,11 +16,11 @@ class Game {
 		}
 		
 		// normal yee yee ass setup
-		this.board = [["rw","nw","bw","qw","kw","bw","nw","rw"],
-					  ["pw","pw","pw","pw","pw","pw","pw","pw"],
+		this.board = [["wr","wn","wb","wq","wk","wb","wn","wr"],
+					  ["wp","wp","wp","wp","wp","wp","wp","wp"],
 					  [],[],[],[],
-					  ["pb","pb","pb","pb","pb","pb","pb","pb"],
-					  ["rb","nb","bb","qb","kb","bb","nb","rb"]]
+					  ["bp","bp","bp","bp","bp","bp","bp","bp"],
+					  ["br","bn","bb","bq","bk","bb","bn","br"]]
 						
 	}
 }
