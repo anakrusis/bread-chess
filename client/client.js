@@ -1,7 +1,7 @@
 class Client {
 	// local state of game to be displayed to the users
 	constructor(){
-		this.board = [];
+		this.board = [[],[],[],[],[],[],[],[]];
 		this.playerw = null; this.playerb = null;
 		this.connected = false;
 	}
@@ -36,14 +36,15 @@ class Client {
 				}
 			});
 			this.on("boardUpdate", function(board){
-				this.board = board;
+				console.log("updating board");
+				client.board = board;
 			});
 		});
 	}
 }
 
 function setup(){
-	var dim = 820;
+	var dim = 600;
 	// height and width should always be equal otherwise shenanigans will occur
 	createCanvas(dim, dim);
 	frameRate(60);
@@ -83,7 +84,18 @@ function draw(){
 			}else{
 				fill("#F0D9B5");
 			}
-			rect(sx,sy,width/8,width/8);
+			rect(sx,sy,width/8,height/8);
+		}
+	}
+	
+	// piece drawing
+	for (var y = 0; y < 8; y++){
+		var sy = y * (height/8);
+		for (var x = 0; x < 8; x++){
+			var sx = x * (width/8);
+			if (client.board[x][y]){
+				image(PIECE_TEXTURES[ client.board[x][y] ], sx, sy, width/8, height/8 );
+			}
 		}
 	}
 }

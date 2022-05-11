@@ -3,6 +3,15 @@
 var config = require('./config.js');
 var Game = require('./game.js');
 
+const { Server } = require("socket.io");
+io = new Server(config.PORT, { 
+	cors: {
+		origin: "http://127.0.0.1:8887",
+		allowedHeaders: ["my-custom-header"],
+		credentials: true
+	} 
+});
+
 class Player {
 	constructor(id){
 		this.id = Math.round(Math.random() * 100000);
@@ -56,31 +65,29 @@ class GameServer {
 					break;
 				
 				case "/list":
-					for (var index in gameserver.players){
+					console.log("Games: " + Object.keys(gameserver.games).length);
+					console.log("Players: " + Object.keys(gameserver.players).length);
+					console.log("");
+					
+					for (var index in gameserver.games){
+						var g = gameserver.games[index];
+						console.log("Game " + g.id);
+						console.log(g.players[0]);
+						console.log(g.players[1]);
+					}
+				
+/* 					for (var index in gameserver.players){
 						console.log ( gameserver.players[index].name + " (ID: " + gameserver.players[index].id + ")" )
 					}
 					if (Object.keys(gameserver.players).length == 0){
 						console.log("No players online!")
-					}
+					} */
 					console.log("");
-					break;
-					
-				// TODO: list all games and player names
-				case "/list":
 					break;
 			}
 		});
 		
-		const { Server } = require("socket.io");
-
-		this.io = new Server(config.PORT, { 
-			cors: {
-				origin: "http://127.0.0.1:8887",
-				allowedHeaders: ["my-custom-header"],
-				credentials: true
-			} 
-		});
-		this.io.on('connection', function (socket) {
+		io.on('connection', function (socket) {
 			
 			if (Object.keys(gameserver.players).length >= gameserver.MAX_PLAYERS){ return; }
 	
@@ -100,7 +107,7 @@ class GameServer {
 			
 			// here is where we will matchmake the player to a game
 			for (var index in gameserver.games){
-				var g = gameserver.games[i];
+				var g = gameserver.games[index];
 				
 				if (!g.inprogress){
 					socket.join(g.id);
@@ -112,6 +119,8 @@ class GameServer {
 			// if there is no games available then create a new game, and randomly assign first player to black or white
 			if (!gamejoined){
 				var g = new Game();
+				gameserver.games[g.id] = g;
+				
 				socket.join(g.id);
 				g.assign(playerJoining);
 			}
@@ -244,7 +253,10 @@ class GameServer {
 		console.log( p.name + " has left the server (ID: " + ind + ")")
 		delete this.players[p.id];
 
-		this.io.emit("playerLeave", ind, this.players);
+		io.emit("playerLeave", ind, this.players);
+		
+		// todo: check all games for that player id, and if the player is in a game then automatically resign them
+		// or in the future, store a cookie with their id so they can rejoin within a limited amount of time
 	}
 }
 
