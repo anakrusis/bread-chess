@@ -1,7 +1,7 @@
 // Chess server
 
 var config = require('./config.js');
-var game = require('./game.js');
+var Game = require('./game.js');
 
 class Player {
 	constructor(id){
@@ -96,45 +96,29 @@ class GameServer {
 			gameserver.players[playerJoining.id].socket = socket.id;			
 			console.log(playerJoining.name + " has joined the server (ID: " + playerJoining.id + ")" )
 			
+			var gamejoined = false;
+			
 			// here is where we will matchmake the player to a game
-			for (var i = 0; i < gameserver.games.length; i++){
+			for (var index in gameserver.games){
 				var g = gameserver.games[i];
 				
-				// if there is an empty game then randomly assign the first player to either black or white
-				if (!g.playerw && !g.playerb){
+				if (!g.inprogress){
 					socket.join(g.id);
-					if (Math.random() >= 0.5){
-						g.playerw = playerJoining.id;
-					}else{
-						g.playerb = playerJoining.id;
-					}
-					break;
-					
-				// if there is a game with one player waiting, then assign the player to the second place
-				// also start that game now
-				}else{
-					if (!g.playerw){
-						socket.join(g.id);
-						g.playerw = playerJoining.id;
-						g.start();
-						break;
-					}
-					if (!g.playerb){
-						socket.join(g.id);
-						g.playerb = playerJoining.id;
-						g.start();
-						break;
-					}
+					g.assign(playerJoining);
+					gamejoined = true;
 				}
 			}
-				// if there is no games available then create a new game, and randomly assign first player to black or white
 				
+			// if there is no games available then create a new game, and randomly assign first player to black or white
+			if (!gamejoined){
+				var g = new Game();
+				socket.join(g.id);
+				g.assign(playerJoining);
+			}
 				
 				//server.io.emit("playerJoin", playerJoining, server.players, server.pieces);
 				
-				//server.spawnPlayer ( playerJoining );
-				
-			//});
+				//server.spawnPlayer ( playerJoining );	
 			
 			// when a player tries to move a piece
 			socket.on("pieceMoveRequest", function(pieceuuid, targetx, targety){

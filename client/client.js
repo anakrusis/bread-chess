@@ -35,12 +35,17 @@ class Client {
 					
 				}
 			});
+			this.on("boardUpdate", function(board){
+				this.board = board;
+			});
 		});
 	}
 }
 
-function setup(){	
-	createCanvas(640, 640);
+function setup(){
+	var dim = 820;
+	// height and width should always be equal otherwise shenanigans will occur
+	createCanvas(dim, dim);
 	frameRate(60);
 	
 	client = new Client(); client.init();
@@ -61,5 +66,24 @@ function preload(){
 		"bb": loadImage("assets/piece/bB.svg"),
 		"bn": loadImage("assets/piece/bN.svg"),
 		"bp": loadImage("assets/piece/bP.svg"),
+	}
+}
+
+function draw(){
+	// the checkered background
+	noStroke();
+	for (var i = 0; i < 8; i++){
+		var sx = i * (width/8);
+		
+		for (var j = 0; j < 8; j++){
+			var sy = j * (height/8);
+			
+			if (( i + j ) % 2 == 1){
+				fill("#B58863");
+			}else{
+				fill("#F0D9B5");
+			}
+			rect(sx,sy,width/8,width/8);
+		}
 	}
 }

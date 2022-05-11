@@ -1,0 +1,59 @@
+body {
+	font-size: 20px;
+	background-color: #ffddff;
+	color: purple;
+	font-family: sans-serif;
+}
+
+div {
+	border: 4px dotted #eeaaee;
+	background-color: white;
+}
+
+.maindiv {
+	margin: auto;
+	width: 75%;
+	background-color: #ccddff;
+	padding: 10px;
+}
+
+h1 {
+	line-height: 1px; 
+}
+
+.bodydiv {
+	padding: 10px;
+	position: relative;
+}
+
+.mainpagediv {
+	padding: 10px;
+	display: flex;
+	position: relative;
+}
+
+th, td {
+  width: 20%;
+
+}
+
+table {
+	margin: auto;
+	width: 100%;
+	height: 36px;
+	padding: 0px;
+}
+
+.linkdiv { 
+	width: 100%;
+	height: 35px;
+	float: left;
+	text-align: center;
+	background-color: #ffffdd;
+}
+
+.headerimg {
+	width: 100%;
+	height: auto;
+}
+

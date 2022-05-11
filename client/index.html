@@ -1,21 +1,26 @@
 <html>
 <head>
 	<title>Bread Chess</title>
-	<meta charset="UTF-8">	
+	<meta charset="UTF-8">
+	<link rel="stylesheet" href="./style.css" />	
 </head>
 </html>
 
 <body>
-	<div class="bodydiv" id="bodydiv">
-		
+	<div class="maindiv" id="maindiv">
+		<div class="mainpagediv">
+			<div class="leftdiv" style="width:50%; flex:1; padding:10px; margin: 5px;">
+				<main>
+				</main>
+			</div>
+			<div class="rightdiv" style="width:50%; float:left; padding:10px; margin: 5px;">
+				p
+			</div>
+		</div>
+
+		<script src="https://cdn.jsdelivr.net/npm/p5@1.3.1/lib/p5.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.0/socket.io.js"></script>
+		<script src="client.js"></script>
 	</div>
-
-	<script src="https://cdn.jsdelivr.net/npm/p5@1.3.1/lib/p5.js"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.0/socket.io.js"></script>
-	<script src="client.js"></script>
-	<style> body {padding: 0; margin: 0;} canvas {vertical-align: top;} </style>
-	<main>
-	</main>
-
-	</body>
+	
 </body>
