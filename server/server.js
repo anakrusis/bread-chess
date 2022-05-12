@@ -17,6 +17,7 @@ class Player {
 		this.id = Math.round(Math.random() * 100000);
 		this.name = "Player" + this.id;
 		this.type = this.constructor.name;
+		this.currentgame = null;
 	}
 }
 
@@ -122,10 +123,17 @@ class GameServer {
 				socket.join(g.id);
 				g.assign(playerJoining);
 			}
+
+			socket.on("nameChangeRequest", function(newname){
+				var p = gameserver.getPlayerFromSocket(this);
+				if (!p){ return; }
+				p.name = newname;
 				
-				//server.io.emit("playerJoin", playerJoining, server.players, server.pieces);
-				
-				//server.spawnPlayer ( playerJoining );	
+				// if player is in a game, then we broadcast the new name to all players in the same room
+				if (!p.currentgame){ return; }
+				var g = gameserver.games[p.currentgame];
+				io.to(p.currentgame).emit("nameUpdate", g.getPlayerNames());
+			});
 			
 			// when a player tries to move a piece
 			socket.on("pieceMoveRequest", function(pieceuuid, targetx, targety){
@@ -161,7 +169,6 @@ class GameServer {
 			});
 			
 			socket.on("disconnect", function () {
-
 				var playerLeaving = gameserver.getPlayerFromSocket(this);
 				 
 				if (playerLeaving == -1){ return; };
@@ -243,7 +250,7 @@ class GameServer {
 				return this.players[i];
 			}
 		}
-		return -1;
+		return null;
 	}
 	
 	onPlayerLeave( p ){

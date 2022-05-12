@@ -12,40 +12,53 @@ class Client {
 	}
 	
 	serverConnect(ip){
-		this.socket = io.connect(ip, { 
+		var socket = io.connect(ip, { 
 			reconnection: false,  withCredentials: true,
 			extraHeaders: {
 				"my-custom-header": "abcd"
 			} 
 		});
 		
-		this.socket.on("connect", function(){
+		socket.on("connect", function(){
 			
 			this.on("disconnect", function(){
 				this.disconnect();
 				this.connected = false;
 			});
 			
+			// this id provided will stay clientside for the whole session
 			this.on("playerJoin", function( playerid ){
 				client.playerid = playerid;
 				console.log(playerid + " has joined ");
-			});
-			this.on("gameStart", function( players, names ){
-				client.players = players;
 				
+				// now that the player object exists, if there is a name already written in the text box, we will send a request to add it immediately
+				var nametext = document.getElementById("namebottom").value;
+				if (nametext != ""){
+					console.log("nametext: " + nametext);
+					this.emit("nameChangeRequest", nametext);
+				}
+				// we will also setup the event that listens for name changes
+				document.getElementById("namebottom").addEventListener("input", function(e){
+					
+					socket.emit("nameChangeRequest", e.target.value);
+				});
+			});
+			this.on("gameStart", function( players ){
+				client.players = players;
+			});
+			
+			this.on("nameUpdate", function(names){
 				// the displayed names at the top and bottom are added in at the start of the match
 				var upperjaw = document.getElementById("nametop");
 				var lowerjaw = document.getElementById("namebottom");
 				
-				if (client.playerid == players[0]){
+				if (client.playerid == client.players[0]){
 					upperjaw.textContent = names[1];
 					lowerjaw.value = names[0];
 				}else{
 					upperjaw.textContent = names[0];
 					lowerjaw.value = names[1];	
 				}
-				// player can freely edit their display name during the match
-				lowerjaw.contentEditable = true;
 			});
 			
 			this.on("boardUpdate", function(board){

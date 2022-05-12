@@ -35,6 +35,8 @@ class Game {
 			else         { console.log(player.name + " has the black pieces from random"); }
 		}
 		
+		player.currentgame = this.id;
+		
 		// game automatically begins if both players are present. this should prevent any issues
 		if (this.players[0] && this.players[1]){
 			this.start();
@@ -59,12 +61,23 @@ class Game {
 		
 		this.inprogress = true;	
 		console.log("Game starting...");
-		
-		//var playertable = [ gameserver.players[this.players[0]], gameserver.players[this.players[1]] ];
-		var namestable = [ gameserver.players[this.players[0]].name, gameserver.players[this.players[1]].name ];
-		// sends over the names of the players and their ideez
-		io.to(this.id).emit("gameStart", this.players, namestable);
+	
+		// sends over the names of the players, their ideez, and the board state to begin
+		io.to(this.id).emit("gameStart", this.players);
 		io.to(this.id).emit("boardUpdate", this.board);
+		io.to(this.id).emit("nameUpdate", this.getPlayerNames());
+	}
+	
+	// used a few times for displaying purposes and stuff
+	getPlayerNames(){
+		var pw = gameserver.players[ this.players[0] ];
+		var pb = gameserver.players[ this.players[1] ];
+		
+		var table = [];
+		table[0] = pw ? pw.name : " ";
+		table[1] = pb ? pb.name : " ";
+		
+		return table;
 	}
 }
 
