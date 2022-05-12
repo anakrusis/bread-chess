@@ -56,16 +56,14 @@ class Game {
 					  ["wn","wp",null,null,null,null,"bp","bn"],
 					  ["wr","wp",null,null,null,null,"bp","br"],		
 		];
-/* 		this.board = [["wr","wn","wb","wq","wk","wb","wn","wr"],
-					  ["wp","wp","wp","wp","wp","wp","wp","wp"],
-					  [],[],[],[],
-					  ["bp","bp","bp","bp","bp","bp","bp","bp"],
-					  ["br","bn","bb","bq","bk","bb","bn","br"]] */
 		
-		this.inprogress = true;
-		
+		this.inprogress = true;	
 		console.log("Game starting...");
-		io.to(this.id).emit("gameStart");
+		
+		//var playertable = [ gameserver.players[this.players[0]], gameserver.players[this.players[1]] ];
+		var namestable = [ gameserver.players[this.players[0]].name, gameserver.players[this.players[1]].name ];
+		// sends over the names of the players and their ideez
+		io.to(this.id).emit("gameStart", this.players, namestable);
 		io.to(this.id).emit("boardUpdate", this.board);
 	}
 }

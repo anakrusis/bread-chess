@@ -5,9 +5,12 @@ body {
 	font-family: sans-serif;
 }
 
-div {
+div, input {
 	border: 4px dotted #eeaaee;
 	background-color: white;
+	font-size: 20px;
+	color: purple;
+	font-family: sans-serif;
 }
 
 .maindiv {

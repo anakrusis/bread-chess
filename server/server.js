@@ -87,17 +87,15 @@ class GameServer {
 			}
 		});
 		
+		// first event when a player joins for the first time
 		io.on('connection', function (socket) {
 			
 			if (Object.keys(gameserver.players).length >= gameserver.MAX_PLAYERS){ return; }
 	
 			var playerJoining = new Player();
 			
-			// this is used to tell the player that they have joined the server
-			//this.emit("playerJoin", playerJoining);
-			
-			// once the player has joined, the server awaits this response from the client, associating the player object with a socket and a name
-			//socket.on("playerAddSocket", function (playerid, socketid) {
+			// this is used to tell the player that they have joined the server. it also gives them their new id
+			socket.emit("playerJoin", playerJoining.id);
 						
 			gameserver.players[playerJoining.id] = playerJoining;				
 			gameserver.players[playerJoining.id].socket = socket.id;			
@@ -260,4 +258,4 @@ class GameServer {
 	}
 }
 
-var gameserver = new GameServer(); gameserver.init();
+gameserver = new GameServer(); gameserver.init();

@@ -2,7 +2,8 @@ class Client {
 	// local state of game to be displayed to the users
 	constructor(){
 		this.board = [[],[],[],[],[],[],[],[]];
-		this.playerw = null; this.playerb = null;
+		this.players = [];
+		this.playerid = null;
 		this.connected = false;
 	}
 
@@ -25,16 +26,28 @@ class Client {
 				this.connected = false;
 			});
 			
-			this.on("playerJoin", function(playerJoining){
-				if (!client.connected){
-					client.connected = true;
-					
-					playerJoining.socket = this.id;
-					//player.name   = my_nama
-					this.emit("playerAddSocket", playerJoining.id, this.id);
-					
-				}
+			this.on("playerJoin", function( playerid ){
+				client.playerid = playerid;
+				console.log(playerid + " has joined ");
 			});
+			this.on("gameStart", function( players, names ){
+				client.players = players;
+				
+				// the displayed names at the top and bottom are added in at the start of the match
+				var upperjaw = document.getElementById("nametop");
+				var lowerjaw = document.getElementById("namebottom");
+				
+				if (client.playerid == players[0]){
+					upperjaw.textContent = names[1];
+					lowerjaw.value = names[0];
+				}else{
+					upperjaw.textContent = names[0];
+					lowerjaw.value = names[1];	
+				}
+				// player can freely edit their display name during the match
+				lowerjaw.contentEditable = true;
+			});
+			
 			this.on("boardUpdate", function(board){
 				console.log("updating board");
 				client.board = board;
@@ -87,12 +100,26 @@ function draw(){
 			rect(sx,sy,width/8,height/8);
 		}
 	}
+	// todo tiny coordinate letters above the squares
 	
 	// piece drawing
-	for (var y = 0; y < 8; y++){
-		var sy = y * (height/8);
+	for (var y = 0; y < 8; y++){	
+		// if player has black pieces, then render normally (top to bottom, low coords to high)
+		if (client.playerid == client.players[1]){
+			var sy = y * (height/8);
+		// with white pieces, flip
+		}else{
+			var sy = (7 - y) * (height/8);
+		}
+		
 		for (var x = 0; x < 8; x++){
-			var sx = x * (width/8);
+			// likewise, but this time, if player has black pieces, horizontally flip
+			if (client.playerid == client.players[1]){
+				var sx = (7 - x) * (width/8);
+			}else{
+				var sx = x * (width/8);
+			}
+			
 			if (client.board[x][y]){
 				image(PIECE_TEXTURES[ client.board[x][y] ], sx, sy, width/8, height/8 );
 			}
