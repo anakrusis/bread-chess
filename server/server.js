@@ -23,22 +23,7 @@ class Player {
 
 class GameServer {
 	
-	constructor(){
-		
-		// List of valid moves for every type of piece, accessed by the piecetype string. 
-		// These valid moves will be mirrored in all four directions
-		// another copy of this will be stored clientside, but only for the sole purpose of rendering.
-		// (The server is still the only one who can dictate a valid move in gameplay)
-		this.MOVESET = {
-			
-			"bishop": [[1,1],[2,2],[3,3],[4,4],[5,5],[6,6],[7,7],[8,8]],
-			"king"  : [[1,1],[0,1]],
-			"knight": [[2,1],[1,2]],
-			"pawn"  : [[0,1]],
-			"queen" : [[1,1],[2,2],[3,3],[4,4],[5,5],[6,6],[7,7],[8,8],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0],[8,0]],
-			"rook"  : [[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0],[8,0]],
-		}
-		
+	constructor(){		
 		this.games = {};
 		this.players = {};
 	}
@@ -135,11 +120,27 @@ class GameServer {
 				io.to(p.currentgame).emit("nameUpdate", g.getPlayerNames());
 			});
 			
-			// when a player tries to move a piece
+			socket.on("validMovesRequest", function(piecex, piecey){
+				var p = gameserver.getPlayerFromSocket(this);
+				if (!p.currentgame){ return; }
+				var g = gameserver.games[p.currentgame];
+				
+				var moves = g.getValidMoves(piecex, piecey);
+				socket.emit("validMoves", moves);
+			});
+			
 			socket.on("pieceMoveRequest", function(startx, starty, targetx, targety){
 				var p = gameserver.getPlayerFromSocket(this);
 				if (!p.currentgame){ return; }
 				var g = gameserver.games[p.currentgame];
+				
+				// looks for legal move
+				var moves = g.getValidMoves(startx, starty);
+				var valid = false;
+				for (var i = 0; i < moves.length; i++){
+					if ( moves[i][0] == targetx && moves[i][1] == targety ){ valid = true; break; }
+				}
+				if (!valid){ return; }
 				
 				g.board[targetx][targety] = g.board[startx][starty];
 				g.board[startx][starty] = null;
@@ -206,7 +207,6 @@ class GameServer {
 				
 				var xcoeff = Math.sign(mx); var ycoeff = Math.sign(my);
 				
-				//if ( this.isTileOccupied( piece.x + mx, piece.y + my ) ){ continue; }
 				var p = this.getPiece(piece.x + mx, piece.y + my);
 				if (p){
 					if (p.playerUUID == piece.playerUUID){

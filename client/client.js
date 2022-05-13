@@ -9,6 +9,7 @@ class Client {
 		this.connected = false;
 		this.pieceSelectedX = null; this.pieceSelectedY = null;
 		this.pieceDraggedX = null; this.pieceDraggedY = null;
+		this.validmoves = []; // just for display purposes
 		
 		this.mousestartx = null; this.mousestarty = null;
 	}
@@ -71,12 +72,59 @@ class Client {
 				console.log("updating board");
 				client.board = board;
 			});
+			
+			this.on("validMoves", function(moves){
+				console.log("valid moves received");
+				client.validmoves = moves;
+			});
 		});
+	}
+	
+	// Todo place screen coords-to-board coords and vice versa into utility functions here
+	// (or anywhere really)
+	coordToScreenX(cx){
+		if (client.playerid == client.players[1]){
+			var sx = (7 - cx) * (width/8);
+		}else{
+			var sx = cx * (width/8);
+		}
+		return sx;
+	}
+	coordToScreenY(cy){
+		var sy;
+		// if player has black pieces, then render normally (top to bottom, low coords to high)
+		if (client.playerid == client.players[1]){
+			sy = cy * (height/8);
+		// and if white pieces, flip em
+		}else{
+			sy = (7 - cy) * (height/8);
+		}
+		return sy;
+	}
+	screenToCoordX(sx){
+		var cx;
+		// x is flipped with the black pieces as usual
+		if (client.playerid == client.players[1]){
+			cx = Math.floor( 8 - ( sx / ( width / 8 )) );
+		}else{
+			cx = Math.floor(sx / ( width / 8 ));
+		}
+		return cx;
+	}
+	screenToCoordY(sy){
+		var cy;
+		// y is flipped with the white pieces as usual
+		if (client.playerid == client.players[0]){
+			cy = Math.floor( 8 - ( sy / ( height / 8 )) );
+		}else{
+			cy = Math.floor( sy / ( height / 8 ));
+		}
+		return cy;
 	}
 }
 
 function setup(){
-	var dim = 2400;
+	var dim = 720;
 	// height and width should always be equal otherwise shenanigans will occur
 	createCanvas(dim, dim);
 	frameRate(60);
@@ -101,48 +149,63 @@ function preload(){
 		"bp": loadImage("assets/piece/bP.svg"),
 	}
 	// TODO bake transparency into a GHOST_TEXTURES table?
-	// (very slow in real time it seems)
+	// (dreadfully slow in real time it seems)
 }
 
-function mousePressed(){
-	var sx; var sy; // square x and y
-	// x flipped with the black pieces as usual
-	if (client.playerid == client.players[1]){
-		sx = Math.floor( 8 - ( mouseX / ( width / 8 )) );
-	}else{
-		sx = Math.floor(mouseX / ( width / 8 ));
-	}
-	// y flipped with the white pieces also
-	if (client.playerid == client.players[0]){
-		sy = Math.floor( 8 - ( mouseY / ( height / 8 )) );
-	}else{
-		sy = Math.floor( mouseY / ( height / 8 ));
-	}
+function mousePressed(e){
+	e.preventDefault();
+	var sx = client.screenToCoordX(mouseX); var sy = client.screenToCoordY(mouseY);
+	
 	if (sx < 0 || sx > 7 || sy < 0 || sy > 7){ return; }
 	console.log(sx + " " + sy);
 	client.mousestartx = sx; client.mousestarty = sy;
-	client.pieceDraggedX = sx; client.pieceDraggedY = sy;
+	
+	if (client.board[sx][sy]){ // will drag piece if a piece is present, otherwise remains null
+		client.pieceDraggedX = sx; client.pieceDraggedY = sy;
+	}
 }
 
-function mouseReleased(){
-	var sx; var sy; // square x and y
-	// x flipped with the black pieces as usual
-	if (client.playerid == client.players[1]){
-		sx = Math.floor( 8 - ( mouseX / ( width / 8 )) );
-	}else{
-		sx = Math.floor(mouseX / ( width / 8 ));
-	}
-	// y flipped with the white pieces also
-	if (client.playerid == client.players[0]){
-		sy = Math.floor( 8 - ( mouseY / ( height / 8 )) );
-	}else{
-		sy = Math.floor( mouseY / ( height / 8 ));
-	}
+function mouseReleased(e){
+	e.preventDefault();
+	var sx = client.screenToCoordX(mouseX); var sy = client.screenToCoordY(mouseY);
 	if (sx < 0 || sx > 7 || sy < 0 || sy > 7){ return; }
+	
+/* 	// if a piece is already selected...
+	if (client.pieceSelectedX != null){
+		// clicking and releasing on that same square should unselect it
+		if (sx == client.pieceSelectedX && sy == client.pieceSelectedY){
+			client.pieceSelectedX = null; client.pieceSelectedY = null;
+			client.validmoves = [];
+		}
+	}
+	 */
 	
 	// if dragged to a new square, send a request
 	if ((sx != client.pieceDraggedX) || (sy != client.pieceDraggedY )){
-		socket.emit("pieceMoveRequest", client.pieceDraggedX, client.pieceDraggedY, sx, sy);
+		if (client.pieceDraggedX != null){ 	// gotta make sure it's not null
+			socket.emit("pieceMoveRequest", client.pieceDraggedX, client.pieceDraggedY, sx, sy);
+			client.pieceSelectedX = null; client.pieceSelectedY = null;
+			client.validmoves = [];
+			
+		}else{
+			if (client.pieceSelectedX != null){
+				socket.emit("pieceMoveRequest", client.pieceSelectedX, client.pieceSelectedY, sx, sy);
+			}
+			client.pieceSelectedX = null; client.pieceSelectedY = null;
+			client.validmoves = [];
+		}
+	}else{
+		// if clicked and released on the same square, and there's a piece, then select the piece
+		// because selecting the piece will display dots on all the valid squares, we request this info
+		if (client.pieceDraggedX != null){ 
+			client.pieceSelectedX = sx; client.pieceSelectedY = sy;
+			socket.emit("validMovesRequest", client.pieceDraggedX, client.pieceDraggedY);
+			
+		// if click and release, and no piece, then unselect whatever piece was selected before
+		}else{
+			client.pieceSelectedX = null; client.pieceSelectedY = null;
+			client.validmoves = [];
+		}
 	}
 	client.pieceDraggedX = null; client.pieceDraggedY = null;
 }
@@ -168,30 +231,41 @@ function draw(){
 	
 	// piece drawing
 	for (var y = 0; y < 8; y++){	
-		// if player has black pieces, then render normally (top to bottom, low coords to high)
-		if (client.playerid == client.players[1]){
-			var sy = y * (height/8);
-		// with white pieces, flip
-		}else{
-			var sy = (7 - y) * (height/8);
-		}
-		
+		var sy = client.coordToScreenY( y );
 		for (var x = 0; x < 8; x++){
-			// likewise, but this time, if player has black pieces, horizontally flip
-			if (client.playerid == client.players[1]){
-				var sx = (7 - x) * (width/8);
-			}else{
-				var sx = x * (width/8);
-			}
-			
+			var sx = client.coordToScreenX( x );
 			if (client.board[x][y]){
+				
+				// if the piece is being dragged then it will skip every other frame for fake transparency
+				if (client.pieceDraggedX == x && client.pieceDraggedY == y && frameCount % 2 == 0){
+					continue;
+				}
+				
 				image(PIECE_TEXTURES[ client.board[x][y] ], sx, sy, width/8, height/8 );
 			}
 		}
 	}
 	
+	// valid move indicator dots
+	for (var i = 0; i < client.validmoves.length; i++){
+		var cm = client.validmoves[i];
+		var mx = client.coordToScreenX( cm[0] ); 
+		var my = client.coordToScreenY( cm[1] );
+		
+		fill(0,160,0,90)
+		circle(mx + width/16,my + width/16,width/28);
+	}
+	
+	// dragging indicator square
+	if (client.pieceDraggedX != null){
+		fill(0,160,0,90)
+		var dx = client.coordToScreenX( client.pieceDraggedX );
+		var dy = client.coordToScreenY( client.pieceDraggedY );
+		rect(dx,dy,width/8,height/8);
+	}
+	
 	//ghost piece
-	if (client.pieceDraggedX && frameCount % 2 == 0){
+	if (client.pieceDraggedX != null){
 		var piece = client.board[client.pieceDraggedX][client.pieceDraggedY];
 		image(PIECE_TEXTURES[piece], mouseX - width/16, mouseY - height/16, width/8, height/8);
 	}
