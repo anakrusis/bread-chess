@@ -1,3 +1,5 @@
+var socket;
+
 class Client {
 	// local state of game to be displayed to the users
 	constructor(){
@@ -5,6 +7,10 @@ class Client {
 		this.players = [];
 		this.playerid = null;
 		this.connected = false;
+		this.pieceSelectedX = null; this.pieceSelectedY = null;
+		this.pieceDraggedX = null; this.pieceDraggedY = null;
+		
+		this.mousestartx = null; this.mousestarty = null;
 	}
 
 	init(){
@@ -12,7 +18,7 @@ class Client {
 	}
 	
 	serverConnect(ip){
-		var socket = io.connect(ip, { 
+		socket = io.connect(ip, { 
 			reconnection: false,  withCredentials: true,
 			extraHeaders: {
 				"my-custom-header": "abcd"
@@ -70,7 +76,7 @@ class Client {
 }
 
 function setup(){
-	var dim = 600;
+	var dim = 2400;
 	// height and width should always be equal otherwise shenanigans will occur
 	createCanvas(dim, dim);
 	frameRate(60);
@@ -94,9 +100,54 @@ function preload(){
 		"bn": loadImage("assets/piece/bN.svg"),
 		"bp": loadImage("assets/piece/bP.svg"),
 	}
+	// TODO bake transparency into a GHOST_TEXTURES table?
+	// (very slow in real time it seems)
 }
 
-function draw(){
+function mousePressed(){
+	var sx; var sy; // square x and y
+	// x flipped with the black pieces as usual
+	if (client.playerid == client.players[1]){
+		sx = Math.floor( 8 - ( mouseX / ( width / 8 )) );
+	}else{
+		sx = Math.floor(mouseX / ( width / 8 ));
+	}
+	// y flipped with the white pieces also
+	if (client.playerid == client.players[0]){
+		sy = Math.floor( 8 - ( mouseY / ( height / 8 )) );
+	}else{
+		sy = Math.floor( mouseY / ( height / 8 ));
+	}
+	if (sx < 0 || sx > 7 || sy < 0 || sy > 7){ return; }
+	console.log(sx + " " + sy);
+	client.mousestartx = sx; client.mousestarty = sy;
+	client.pieceDraggedX = sx; client.pieceDraggedY = sy;
+}
+
+function mouseReleased(){
+	var sx; var sy; // square x and y
+	// x flipped with the black pieces as usual
+	if (client.playerid == client.players[1]){
+		sx = Math.floor( 8 - ( mouseX / ( width / 8 )) );
+	}else{
+		sx = Math.floor(mouseX / ( width / 8 ));
+	}
+	// y flipped with the white pieces also
+	if (client.playerid == client.players[0]){
+		sy = Math.floor( 8 - ( mouseY / ( height / 8 )) );
+	}else{
+		sy = Math.floor( mouseY / ( height / 8 ));
+	}
+	if (sx < 0 || sx > 7 || sy < 0 || sy > 7){ return; }
+	
+	// if dragged to a new square, send a request
+	if ((sx != client.pieceDraggedX) || (sy != client.pieceDraggedY )){
+		socket.emit("pieceMoveRequest", client.pieceDraggedX, client.pieceDraggedY, sx, sy);
+	}
+	client.pieceDraggedX = null; client.pieceDraggedY = null;
+}
+
+function draw(){	
 	// the checkered background
 	noStroke();
 	for (var i = 0; i < 8; i++){
@@ -137,5 +188,11 @@ function draw(){
 				image(PIECE_TEXTURES[ client.board[x][y] ], sx, sy, width/8, height/8 );
 			}
 		}
+	}
+	
+	//ghost piece
+	if (client.pieceDraggedX && frameCount % 2 == 0){
+		var piece = client.board[client.pieceDraggedX][client.pieceDraggedY];
+		image(PIECE_TEXTURES[piece], mouseX - width/16, mouseY - height/16, width/8, height/8);
 	}
 }

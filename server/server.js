@@ -136,8 +136,16 @@ class GameServer {
 			});
 			
 			// when a player tries to move a piece
-			socket.on("pieceMoveRequest", function(pieceuuid, targetx, targety){
+			socket.on("pieceMoveRequest", function(startx, starty, targetx, targety){
+				var p = gameserver.getPlayerFromSocket(this);
+				if (!p.currentgame){ return; }
+				var g = gameserver.games[p.currentgame];
 				
+				g.board[targetx][targety] = g.board[startx][starty];
+				g.board[startx][starty] = null;
+				io.to(g.id).emit("boardUpdate", g.board);
+				
+/* 				
 				var originalx = server.pieces[pieceuuid].x;
 				var originaly = server.pieces[pieceuuid].y;
 				
@@ -165,7 +173,7 @@ class GameServer {
 				
 				server.io.emit("boardUpdate", server.pieces);
 				server.io.emit("pieceMoved", playerMoving.id, pieceuuid, originalx, originaly, targetx, targety );
-				
+				 */
 			});
 			
 			socket.on("disconnect", function () {
