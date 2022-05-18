@@ -153,7 +153,7 @@ function preload(){
 }
 
 function mousePressed(e){
-	e.preventDefault();
+	//e.preventDefault();
 	var sx = client.screenToCoordX(mouseX); var sy = client.screenToCoordY(mouseY);
 	
 	if (sx < 0 || sx > 7 || sy < 0 || sy > 7){ return; }
@@ -166,7 +166,7 @@ function mousePressed(e){
 }
 
 function mouseReleased(e){
-	e.preventDefault();
+	//e.preventDefault();
 	var sx = client.screenToCoordX(mouseX); var sy = client.screenToCoordY(mouseY);
 	if (sx < 0 || sx > 7 || sy < 0 || sy > 7){ return; }
 	

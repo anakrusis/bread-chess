@@ -134,6 +134,11 @@ class GameServer {
 				if (!p.currentgame){ return; }
 				var g = gameserver.games[p.currentgame];
 				
+				// if it's not your piece or not your turn, get out
+				if (p.id != g.players[ g.turn ]){ return; }
+				var expectedpiececolor = g.players.indexOf(p.id) == 0 ? "w" : "b";
+				if (expectedpiececolor != g.board[startx][starty].charAt(0)){ return; }
+				
 				// looks for legal move
 				var moves = g.getValidMoves(startx, starty);
 				var valid = false;
@@ -142,6 +147,9 @@ class GameServer {
 				}
 				if (!valid){ return; }
 				
+				// successful piece move
+				
+				g.turn = (g.turn + 1) % 2;
 				g.board[targetx][targety] = g.board[startx][starty];
 				g.board[startx][starty] = null;
 				io.to(g.id).emit("boardUpdate", g.board);

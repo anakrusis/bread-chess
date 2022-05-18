@@ -11,12 +11,14 @@ class Game {
 		this.moves = [];
 		this.board = [[],[],[],[],[],[],[],[]]; // to keep things simple the board is just a simple array of strings
 		this.moldytimers = [];
+		this.turn = 0; // index of the player whose turn it is
 		
 		this.MOVESET = {
 			"b": [[1,1],[2,2],[3,3],[4,4],[5,5],[6,6],[7,7],[8,8]],
 			"k"  : [[1,1],[0,1]],
 			"n": [[2,1],[1,2]],
-			// pawn is special and doesnt have a symmetrical moveset
+			// pawn is special and doesnt handle its moveset like the rest
+			"p" : [],
 			"q" : [[1,1],[2,2],[3,3],[4,4],[5,5],[6,6],[7,7],[8,8],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0],[8,0]],
 			"r"  : [[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0],[8,0]],
 		}
@@ -76,6 +78,12 @@ class Game {
 		io.to(this.id).emit("nameUpdate", this.getPlayerNames());
 	}
 	
+	// gets piece string from board without crashing if index out of bounds
+	pieceAt(x,y){
+		if (!this.board[x]){ return null; }
+		return this.board[x][y];
+	}
+	
 	// used a few times for displaying purposes and stuff
 	getPlayerNames(){
 		var pw = gameserver.players[ this.players[0] ];
@@ -91,11 +99,56 @@ class Game {
 	// this function will also contain the restrictions of the bread rolling, in addition to regular chess moves
 	getValidMoves(px, py){
 		var out = [];
-		var piecetype = this.board[px][py].charAt(1);
+		var piecetype  = this.board[px][py].charAt(1);
+		var piececolor = this.board[px][py].charAt(0);
 		var moves = this.MOVESET[ piecetype ];
 		
-		// special treatment for pawns (TODO)
+		// TODO add castling
+		
+		// special treatment for pawns (Todo clean this up a bit)
 		if (piecetype == "p"){
+			var currentx; var currenty;
+			
+			// one square pawn push
+			var osx = 0; var osy = 1;
+			var onesquarelegal = false;
+			if (piececolor == "b"){
+				osy *= -1;
+			}
+			currentx = px + osx; currenty = py + osy;
+			if (!this.pieceAt(currentx,currenty)){
+				out.push([ currentx , currenty ]);
+				onesquarelegal = true;
+			}
+			
+			// two square pawn push, only on starting rank
+			var tsx = 0; var tsy = 2;
+			var startrank = piececolor == "b" ? 6 : 1;
+			if (piececolor == "b"){
+				tsy *= -1;
+			}
+			if (onesquarelegal && py == startrank){
+				currentx = px + tsx; currenty = py + tsy;
+				if (!this.pieceAt(currentx,currenty)){
+					out.push([ currentx , currenty ]);
+				}
+			}
+			
+			// captures (in both directions)
+			var cpx = 1; var cpy = 1;
+			if (piececolor == "b"){
+				cpy *= -1;
+			}
+			for (var i = 0; i < 2; i++){
+				currentx = px + cpx; currenty = py + cpy;
+				if (this.pieceAt(currentx,currenty)){
+					out.push([ currentx , currenty ]);
+				}
+				cpx *= -1;
+			}
+			
+			// todo add en passant lol
+			
 			return out;
 		}
 		// all other pieces
@@ -113,20 +166,16 @@ class Game {
 				var obstructed = false;
 				var currentx = px; var currenty = py;
 				var count = 0;
-				while ( currentx != px + mx || currenty != py + my ){
-					
+				while ( currentx != px + mx || currenty != py + my ){		
 					currentx += xcoeff; currenty += ycoeff;
 					
-					if (this.board[currentx]){
-						var p = this.board[currentx][currenty];
-						if (p){
-							// sliding pieces can capture the first piece in their line of view
-							// (todo configurable friendly fire)
-							out.push([ currentx , currenty ]);
-							obstructed = true; break;
-						}
+					var p = this.pieceAt(currentx, currenty);
+					if (p){
+						// sliding pieces can capture the first piece in their line of view
+						// (todo configurable friendly fire)
+						out.push([ currentx , currenty ]);
+						obstructed = true; break;
 					}
-					
 					// There is no reason for any piece to move 15 spaces out
 					// It's just a preventative measure in case the loop might get stuck infinitely going out
 					count++; if (count > 15){ break; }
@@ -140,6 +189,8 @@ class Game {
 		// TODO trim all elements with out of bounds indices
 		
 		// TODO trim all redundant elements
+		
+		// TODO roll the bread now, after all legal moves are found, so that the outcome can be confirmedly one of these legal moves
 		
 		return out;
 	}
