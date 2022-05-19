@@ -125,6 +125,11 @@ class GameServer {
 				if (!p.currentgame){ return; }
 				var g = gameserver.games[p.currentgame];
 				
+				// if it's not your piece or not your turn, get out
+				if (p.id != g.players[ g.turn ]){ return; }
+				var expectedpiececolor = g.players.indexOf(p.id) == 0 ? "w" : "b";
+				if (expectedpiececolor != g.board[piecex][piecey].charAt(0)){ return; }
+				
 				var moves = g.getValidMoves(piecex, piecey);
 				socket.emit("validMoves", moves);
 			});
@@ -149,40 +154,28 @@ class GameServer {
 				
 				// successful piece move
 				
+				// any king move removes castling rights (including castling itself)
+				var piecetype  = g.board[startx][starty].charAt(1);
+				if (piecetype == "k"){ 
+					g.castlingrights[g.players.indexOf(p.id)] = [false,false]; 
+					
+					// if castling, move the rook too
+					// (kingside)
+					if ((targetx - startx) == 2){
+						g.board[startx + 1][starty] = g.board[startx + 3][starty];
+						g.board[startx + 3][starty] = null;
+					}			
+					// (queenside)
+					if ((targetx - startx) == -2){
+						g.board[startx - 1][starty] = g.board[startx - 4][starty];
+						g.board[startx - 4][starty] = null;
+					}
+				}
+				
 				g.turn = (g.turn + 1) % 2;
 				g.board[targetx][targety] = g.board[startx][starty];
 				g.board[startx][starty] = null;
-				io.to(g.id).emit("boardUpdate", g.board);
-				
-/* 				
-				var originalx = server.pieces[pieceuuid].x;
-				var originaly = server.pieces[pieceuuid].y;
-				
-				var playerMoving = server.getPlayerFromSocket(this);
-				var pieceMoving  = server.pieces[pieceuuid];
-				
-				if (pieceMoving.playerUUID != playerMoving.id){ return; }
-				
-				var moves = server.MOVESET[ pieceMoving.piecetype ]; 
-				var validSpaces = server.getValidSpaces(pieceMoving, moves); 
-				
-				var valid = false;
-				for (var i = 0; i < validSpaces.length; i++){
-					if ( validSpaces[i][0] == targetx && validSpaces[i][1] == targety ){ valid = true; break; }
-				}
-				if (!valid){ return; }
-				
-				var p = server.getPiece(targetx, targety);
-				if (p){
-					delete server.pieces[p.uuid];
-				}
-
-				pieceMoving.x = targetx;
-				pieceMoving.y = targety;
-				
-				server.io.emit("boardUpdate", server.pieces);
-				server.io.emit("pieceMoved", playerMoving.id, pieceuuid, originalx, originaly, targetx, targety );
-				 */
+				io.to(g.id).emit("boardUpdate", g.board);				
 			});
 			
 			socket.on("disconnect", function () {

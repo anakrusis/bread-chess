@@ -10,6 +10,7 @@ class Game {
 		this.players = []; // they will be added in before the game starts. these are uuids
 		this.moves = [];
 		this.board = [[],[],[],[],[],[],[],[]]; // to keep things simple the board is just a simple array of strings
+		this.castlingrights = [[true,true],[true,true]]; // each player has a table for this, kingside then queenside
 		this.moldytimers = [];
 		this.turn = 0; // index of the player whose turn it is
 		
@@ -99,46 +100,70 @@ class Game {
 	// this function will also contain the restrictions of the bread rolling, in addition to regular chess moves
 	getValidMoves(px, py){
 		var out = [];
+		// this is used to store a parallel array containing single-number values instead of two-item arrays for moves
+		// which significantly reduces the complexity of the trimming functions later on
+		var paired_array = [];
+		
 		var piecetype  = this.board[px][py].charAt(1);
 		var piececolor = this.board[px][py].charAt(0);
+		var playerindex = piececolor == "b" ? 1 : 0;
 		var moves = this.MOVESET[ piecetype ];
 		
-		// TODO add castling
+		// castling
+		if (piecetype == "k"){
+			// kingside castling
+			if (this.castlingrights[playerindex][0]){
+				if ( 
+					this.board[ px + 3 ][ py ] == (piececolor + "r") && // our rook in the right spot
+					this.board[ px + 2 ][ py ] == null && // nothing in the king's knight's spot
+					this.board[ px + 1 ][ py ] == null    // nothing in the king's bishop's spot
+				){		
+					out.push([ px + 2 , py ]); 
+					paired_array.push( py * 8 + (px + 2));
+					console.log("can castle kingside");
+				}
+				
+			}
+			// queenside castling
+			if (this.castlingrights[playerindex][1]){
+				if (
+					this.board[ px - 4 ][ py ] == (piececolor + "r") && // our rook in the right spot
+					this.board[ px - 3 ][ py ] == null && // nothing in queens knights spot
+					this.board[ px - 2 ][ py ] == null && // nothing in queenes bishops spot
+					this.board[ px - 1 ][ py ] == null    // nothing in queenes spot
+				){
+					out.push([ px - 2 , py ]); 
+					paired_array.push( py * 8 + (px - 2));
+					console.log("can castle queenside");
+				}
+			}
+		}
 		
-		// special treatment for pawns (Todo clean this up a bit)
+		// special treatment for pawns
 		if (piecetype == "p"){
 			var currentx; var currenty;
 			
 			// one square pawn push
-			var osx = 0; var osy = 1;
+			var osy = piececolor == "b" ? -1 : 1;
 			var onesquarelegal = false;
-			if (piececolor == "b"){
-				osy *= -1;
-			}
-			currentx = px + osx; currenty = py + osy;
-			if (!this.pieceAt(currentx,currenty)){
-				out.push([ currentx , currenty ]);
+			currenty = py + osy;
+			if (!this.pieceAt( px, currenty )){
+				out.push([ px , currenty ]);
 				onesquarelegal = true;
 			}
 			
 			// two square pawn push, only on starting rank
-			var tsx = 0; var tsy = 2;
+			var tsy = piececolor == "b" ? -2 : 2;
 			var startrank = piececolor == "b" ? 6 : 1;
-			if (piececolor == "b"){
-				tsy *= -1;
-			}
 			if (onesquarelegal && py == startrank){
-				currentx = px + tsx; currenty = py + tsy;
-				if (!this.pieceAt(currentx,currenty)){
-					out.push([ currentx , currenty ]);
+				currenty = py + tsy;
+				if (!this.pieceAt(px, currenty)){
+					out.push([ px , currenty ]);
 				}
 			}
 			
 			// captures (in both directions)
-			var cpx = 1; var cpy = 1;
-			if (piececolor == "b"){
-				cpy *= -1;
-			}
+			var cpx = 1; var cpy = piececolor == "b" ? -1 : 1;
 			for (var i = 0; i < 2; i++){
 				currentx = px + cpx; currenty = py + cpy;
 				if (this.pieceAt(currentx,currenty)){
@@ -159,8 +184,13 @@ class Game {
 				var my = Math.round((moves[i][0]) * Math.sin(angle) + (moves[i][1]) * Math.cos(angle));
 				var xcoeff = Math.sign(mx); var ycoeff = Math.sign(my);
 				
-				// Knights can hop over other pieces so they need not check for obstructions
-				if (piecetype == "n"){ out.push([ px + mx , py + my ]); continue; }
+				// Knights can hop over other pieces so they need not check for obstructions.
+				if (piecetype == "n"){ 
+					out.push([ px + mx , py + my ]); 
+					paired_array.push( ((py + my) * 8) + (px + mx));
+					continue; 
+				}
+				// All the code underneath is skipped for knights, and applies to all the sliding pieces
 				
 				// This loop checks for pieces between the current space and the target space
 				var obstructed = false;
@@ -174,6 +204,7 @@ class Game {
 						// sliding pieces can capture the first piece in their line of view
 						// (todo configurable friendly fire)
 						out.push([ currentx , currenty ]);
+						paired_array.push( (currenty * 8) + currentx );
 						obstructed = true; break;
 					}
 					// There is no reason for any piece to move 15 spaces out
@@ -183,12 +214,32 @@ class Game {
 				
 				if (obstructed){ continue; }
 				out.push([ px + mx , py + my ]);
+				paired_array.push( ((py + my) * 8) + (px + mx));
 			}
 		}
+		console.log("length: " + out.length);
 		
-		// TODO trim all elements with out of bounds indices
+		// trims all elements with out of bounds indices
+		for (var i = 0; i < out.length; i++){
+			if( out[i][0] > 7 || out[i][0] < 0){ out.splice(i,1); paired_array.splice(i,1); i--; }
+		}
+		for (var i = 0; i < out.length; i++){
+			if( out[i][1] > 7 || out[i][1] < 0){ out.splice(i,1); paired_array.splice(i,1); i--; }
+		}
 		
-		// TODO trim all redundant elements
+		console.log("length after oob trim: " + out.length);
+		
+		// trims all redundant elements based off the pairing function value of the coordinates
+		for (var i = 0; i < out.length; i++){			
+			var pairedvalue = (out[i][1] * 8) + out[i][0];
+			//console.log(paired_array[i] + ", expected " + pairedvalue);
+			var pairedindex = paired_array.indexOf( pairedvalue );
+			if ( pairedindex != i ){
+				out.splice(i,1); paired_array.splice(i,1); i--;
+			}
+		}
+		console.log("length after redundant trim: " + out.length);
+		console.log(" ");
 		
 		// TODO roll the bread now, after all legal moves are found, so that the outcome can be confirmedly one of these legal moves
 		
