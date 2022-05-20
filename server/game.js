@@ -97,6 +97,35 @@ class Game {
 		return table;
 	}
 	
+	// must be called before the move is committed.
+	// (why? because if there is a piece on the target square then it will be able to tell, and mark the move with "x")
+	getMoveName(startx, starty, targetx, targety){
+		var piecetype  = this.pieceAt(startx,starty).charAt(1);
+		if (piecetype != "p"){
+			var out = piecetype.toUpperCase();
+		}else{
+			// todo if capturing with a pawn, say the file name
+			var out = "";
+		}
+		// takes
+		if (this.pieceAt(targetx,targety)){
+			out = out + "x";
+		}
+		
+		// todo castling has special move names O-O and O-O-O
+		
+		// TODO disambiguate if two or more pieces of the same type can go to that square
+		// (O god this sounds kinda hard...)
+		
+		var alphabet = ["a","b","c","d","e","f","g","h"];
+		var file = alphabet[targetx];
+		var rank = targety + 1;
+		
+		out = out + file + rank;
+		console.log(out);
+		return out;
+	}
+	
 	// this function will also contain the restrictions of the bread rolling, in addition to regular chess moves
 	getValidMoves(px, py){
 		var out = [];

@@ -12,17 +12,26 @@ div, input, button {
 	color: white;
 	font-family: sans-serif;
 }
-
 input:hover {
 	background-color: #445566;
 }
 
-.button1{
+.button1, .moves{
 	width: 100%;
 }
-
 .button1:hover {
 	background-color: #445566;
+}
+.moves{
+	display:flex;
+}
+
+.leftmoves, .rightmoves{
+	width:45%; 
+	flex:1; 
+	flex-wrap:wrap; 
+	padding:10px; 
+	margin: 5px;
 }
 
 .maindiv {

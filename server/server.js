@@ -172,10 +172,15 @@ class GameServer {
 					}
 				}
 				
+				// TODO Remove castling rights if rooks have moved or been captured
+				
+				var movename = g.getMoveName(startx, starty, targetx, targety);
+				
 				g.turn = (g.turn + 1) % 2;
 				g.board[targetx][targety] = g.board[startx][starty];
 				g.board[startx][starty] = null;
-				io.to(g.id).emit("boardUpdate", g.board);				
+				io.to(g.id).emit("boardUpdate", g.board);
+				io.to(g.id).emit("pieceMoved", [startx,starty], [targetx, targety], movename);						
 			});
 			
 			socket.on("disconnect", function () {
@@ -246,11 +251,6 @@ class GameServer {
 		}
 		
 		return output;
-	}
-	
-	spawnPiece( piece ){
-		this.pieces[piece.uuid] = piece;
-		this.io.emit("boardUpdate", this.pieces);
 	}
 	
 	getPlayerFromSocket(socket_in){

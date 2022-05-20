@@ -2,6 +2,9 @@ class Client {
 	// local state of game to be displayed to the users
 	constructor(){
 		this.board = [[],[],[],[],[],[],[],[]];
+		this.boardhistory = [];
+		this.movenames = [];
+		
 		this.players = [];
 		this.playerid = null;
 		this.connected = false;
@@ -12,6 +15,7 @@ class Client {
 		this.mousestartx = null; this.mousestarty = null;
 		
 		this.centertext = "Welcome to Bread Chess!";
+		this.nextcell = null; // cell in the moves table to be updated next
 	}
 
 	init(){
@@ -74,12 +78,37 @@ class Client {
 			});
 			
 			this.on("boardUpdate", function(board){
-				console.log("updating board");
+				// no deep copying is needed because a brand new array comes from the server
+				client.boardhistory.push( client.board );
 				client.board = board;
 			});
 			
+			this.on("pieceMoved", function(startpos,endpos,movename){
+				var movetable = document.getElementById("movestable");
+				
+				client.movenames.push( movename );
+				// on every odd move, make a new row in the table
+				if (client.movenames.length % 2 == 1){
+					
+					var newrow = movetable.insertRow();
+					var headercell = document.createElement('th');
+					headercell.innerHTML = (client.movenames.length + 1) / 2;
+					newrow.appendChild(headercell);
+					
+					var cell1 = newrow.insertCell();
+					cell1.innerHTML = '<button type="button" class="button1">' + movename + '</button>'
+					
+					var cell2 = newrow.insertCell();
+					cell2.innerHtml = " ";
+					client.nextcell = cell2;
+					
+				// on every even move, fill in the other blank cell in the row
+				}else{
+					client.nextcell.innerHTML = '<button type="button" class="button1">' + movename + '</button>'
+				}
+			});
+			
 			this.on("validMoves", function(moves){
-				console.log("valid moves received");
 				client.validmoves = moves;
 			});
 		});

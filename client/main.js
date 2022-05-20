@@ -12,6 +12,7 @@ function setup(){
 	client = new Client(); client.init();	
 	document.getElementById("queueup").onclick = function(){
 		client.serverConnect("http://localhost:16160");
+		client.centertext = "Connecting...";
 	}
 }
 
