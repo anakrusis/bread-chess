@@ -60,17 +60,10 @@ class Game {
 		if (!this.players[0] || !this.players[1]){
 			console.log("Not enough players to start a game!"); return;
 		}
-		
-		// normal yee yee ass setup
-		this.board = [["wr","wp",null,null,null,null,"bp","br"],
-					  ["wn","wp",null,null,null,null,"bp","bn"],
-					  ["wb","wp",null,null,null,null,"bp","bb"],
-					  ["wq","wp",null,null,null,null,"bp","bq"],
-					  ["wk","wp",null,null,null,null,"bp","bk"],
-					  ["wb","wp",null,null,null,null,"bp","bb"],
-					  ["wn","wp",null,null,null,null,"bp","bn"],
-					  ["wr","wp",null,null,null,null,"bp","br"],		
-		];
+		var newboard = this.newBoard( this.startingfen) ;
+		if (newboard){
+			this.board = newboard;
+		}
 		
 		this.inprogress = true;	
 		console.log("Game starting...");
@@ -81,8 +74,56 @@ class Game {
 		io.to(this.id).emit("nameUpdate", this.getPlayerNames());
 	}
 	
-	setup(fen){
-		this.board = [[],[],[],[],[],[],[],[]];
+	newBoard(fen){
+		var validpieces = ["b","k","n","p","r","q"];
+		var newboard = [[],[],[],[],[],[],[],[]];
+		
+		var section = 0; var currx = 0; var curry = 7;
+		
+		for (var i = 0; i < fen.length; i++){
+			var ch = fen.charAt(i);
+			// fen format has several sections seperated by spaces. they are:
+			if (ch == " "){ section++; continue; }
+			
+			console.log(currx + " " + curry);
+			
+			// out of bounds?? this cant be a valid fen!
+			if (curry > 7 || curry < 0 || currx > 8 || currx < 0){ return false; }
+			
+			// piece placement on board
+			if (section == 0){
+				if (ch == "/"){
+					currx = 0; curry--;
+					
+				// numbers indicate blank areas on the board
+				}else if (parseInt(ch)){
+					for (var q = 0; q < parseInt(ch); q++){
+						if (newboard[currx]){
+							newboard[currx][curry] = null; currx++;
+						}
+					}
+					
+				// everything else could be a piece letter, so we check for those
+				}else{
+					var lower = ch.toLowerCase(); console.log(lower);
+					var newpiece;
+					if (validpieces.indexOf(lower) != -1){
+						// lowercase characters are black pieces and uppercase are white pieces
+						newpiece = lower == ch ? "b" : "w";
+						newpiece += lower;
+						if (newboard[currx]){
+							newboard[currx][curry] = newpiece; currx++;
+						}
+					}
+				}	
+				
+			// who is to move
+			}else if (section == 1){
+				
+			}
+		}
+		
+		return newboard;
 	}
 	
 	// gets piece string from board without crashing if index out of bounds
