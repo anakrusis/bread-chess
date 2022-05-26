@@ -19,6 +19,12 @@ class Client {
 	}
 
 	init(){
+		// clears list of moves
+		this.board = [[],[],[],[],[],[],[],[]];
+		this.boardhistory = [];
+		this.movenames = [];
+		var movetable = document.getElementById("movestable");
+		movetable.innerHTML = "";
 	}
 	
 	serverConnect(ip){
@@ -33,6 +39,8 @@ class Client {
 			// the queue up button can hide now
 			document.getElementById("queueup").style.display = "none";
 			client.centertext = "Waiting for another player...";
+			
+			client.init();
 			
 			this.on("disconnect", function(){
 				this.disconnect();

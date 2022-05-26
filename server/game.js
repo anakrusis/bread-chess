@@ -23,6 +23,8 @@ class Game {
 			"q" : [[1,1],[2,2],[3,3],[4,4],[5,5],[6,6],[7,7],[8,8],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0],[8,0]],
 			"r"  : [[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0],[8,0]],
 		}
+		
+		this.startingfen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 	}
 	
 	// attempts to put a player in this game. if it can't, its okay, it just wont
@@ -79,6 +81,10 @@ class Game {
 		io.to(this.id).emit("nameUpdate", this.getPlayerNames());
 	}
 	
+	setup(fen){
+		this.board = [[],[],[],[],[],[],[],[]];
+	}
+	
 	// gets piece string from board without crashing if index out of bounds
 	pieceAt(x,y){
 		if (!this.board[x]){ return null; }
@@ -100,24 +106,75 @@ class Game {
 	// must be called before the move is committed.
 	// (why? because if there is a piece on the target square then it will be able to tell, and mark the move with "x")
 	getMoveName(startx, starty, targetx, targety){
-		var piecetype  = this.pieceAt(startx,starty).charAt(1);
-		if (piecetype != "p"){
-			var out = piecetype.toUpperCase();
+		var alphabet = ["a","b","c","d","e","f","g","h"];
+		
+		var targetpiece = this.pieceAt(targetx,targety);
+		var startpiece = this.pieceAt(startx,starty);
+		var startpiecetype = startpiece.charAt(1);
+		var startpiececolor = startpiece.charAt(0);
+		
+		if (startpiecetype != "p"){
+			var out = startpiecetype.toUpperCase();
 		}else{
-			// todo if capturing with a pawn, say the file name
-			var out = "";
+			// if capturing with a pawn, say the file name
+			if (targetpiece){
+				var out = alphabet[startx];
+			}else{
+				var out = "";
+			}
 		}
+		
+		// castling has special move names
+		if (startpiecetype == "k"){
+			if (targetx - startx == 2){
+				return "O-O";
+			}else if (targetx - startx == -2){
+				return "O-O-O";
+			}
+		}
+		// Disambiguating when two or more pieces can go to the same square
+		if (startpiecetype != "p" && startpiecetype != "k"){
+			var temppiece = startpiececolor == "w" ? "b" : "w"; temppiece = temppiece + startpiecetype;
+			this.board[targetx][targety] = temppiece;
+			var temppiecemoves = this.getValidMoves(targetx,targety);
+			var pieces_on_file = 1; var pieces_on_rank = 1;
+			
+			// creates an imaginary enemy piece on the destination square, and gets its valid moves 
+			// if it can capture a friendly piece of the same type on a different square as the original piece
+			// then we will count how many of these same type pieces share the ranks and files
+			
+			for (var i = 0; i < temppiecemoves.length; i++){
+				var movex = temppiecemoves[i][0]; var movey = temppiecemoves[i][1];
+				var currpiece = this.pieceAt(movex,movey);
+				if (!currpiece){ continue; }
+				if (movex == startx && movey == starty){ continue; }
+				
+				if (currpiece.charAt(0) == startpiececolor && currpiece.charAt(1) == startpiecetype){
+					if (movex == startx){
+						pieces_on_file++;
+					}
+					if (movey == starty){
+						pieces_on_rank++;
+					}
+				}
+			}
+			// if more than two pieces share a rank, the file is specified
+			// if more than two pieces share a file, rank is specified
+			// both can be specified if neccessary too
+			if (pieces_on_rank > 1){
+				out = out + alphabet[startx];
+			}
+			if (pieces_on_file > 1){
+				out = out + (starty + 1);
+			}
+			this.board[targetx][targety] = targetpiece;
+		}
+		
 		// takes
-		if (this.pieceAt(targetx,targety)){
+		if (targetpiece){
 			out = out + "x";
 		}
-		
-		// todo castling has special move names O-O and O-O-O
-		
-		// TODO disambiguate if two or more pieces of the same type can go to that square
-		// (O god this sounds kinda hard...)
-		
-		var alphabet = ["a","b","c","d","e","f","g","h"];
+	
 		var file = alphabet[targetx];
 		var rank = targety + 1;
 		
