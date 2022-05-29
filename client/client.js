@@ -119,6 +119,10 @@ class Client {
 			this.on("validMoves", function(moves){
 				client.validmoves = moves;
 			});
+			
+			this.on("gameEnd", function( endingtype, winnerindex ){
+				console.log(endingtype + ", " + winnerindex);
+			});
 		});
 	}
 	

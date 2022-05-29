@@ -372,6 +372,11 @@ class Game {
 		
 		return out;
 	}
+	
+	// closes the sockets and ends the game
+	end(endingtype, winnerindex){
+		io.to(this.id).emit("gameEnd", endingtype, winnerindex);
+	}
 }
 
 module.exports = Game;

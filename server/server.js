@@ -172,15 +172,46 @@ class GameServer {
 					}
 				}
 				
-				// TODO Remove castling rights if rooks have moved or been captured
+				// Removes castling rights if rooks have moved or been captured
+				if ((targetx == 7 && targety == 0) || (startx == 7 && starty == 0)){
+					g.castlingrights[0][0] = false; console.log("white cant castle kingside anymore");
+				}
+				if ((targetx == 0 && targety == 0) || (startx == 0 && starty == 0)){
+					g.castlingrights[0][1] = false; console.log("white cant castle queenside anymore");
+				}
+				if ((targetx == 7 && targety == 7) || (startx == 7 && starty == 7)){
+					g.castlingrights[1][0] = false; console.log("black cant castle kingside anymore");
+				}
+				if ((targetx == 0 && targety == 7) || (startx == 0 && starty == 7)){
+					g.castlingrights[1][1] = false; console.log("black cant castle queenside anymore");
+				}
 				
 				var movename = g.getMoveName(startx, starty, targetx, targety);
+				
+				var gameovertype = false;
+				var targetpiece = g.pieceAt(targetx,targety);
+				var winnerindex;
+				
+				// here is where we decide if a move ends the game
+				if (targetpiece){
+					var targetpiececolor = targetpiece.charAt(0);
+					
+					if (targetpiece.charAt(1) == "k"){
+						movename += "#";
+						winnerindex = targetpiececolor == "b" ? 0 : 1;
+						gameovertype = "checkmate";
+					}
+				}
 				
 				g.turn = (g.turn + 1) % 2;
 				g.board[targetx][targety] = g.board[startx][starty];
 				g.board[startx][starty] = null;
 				io.to(g.id).emit("boardUpdate", g.board);
-				io.to(g.id).emit("pieceMoved", [startx,starty], [targetx, targety], movename);						
+				io.to(g.id).emit("pieceMoved", [startx,starty], [targetx, targety], movename);
+				
+				if (gameovertype){
+					g.end(gameovertype, winnerindex);
+				}
 			});
 			
 			socket.on("disconnect", function () {
