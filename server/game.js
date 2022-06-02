@@ -376,6 +376,12 @@ class Game {
 	// closes the sockets and ends the game
 	end(endingtype, winnerindex){
 		io.to(this.id).emit("gameEnd", endingtype, winnerindex);
+		for (var i = 0; i < this.players.length; i++){
+			var pid = this.players[i];
+			console.log(pid);
+			var socketid = gameserver.players[pid].socket;
+			io.sockets.sockets.get(socketid).disconnect();
+		}
 	}
 }
 

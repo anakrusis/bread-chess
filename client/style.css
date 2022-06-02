@@ -34,6 +34,11 @@ input:hover {
 	margin: 5px;
 }
 
+.innerrightdiv {
+	height: 30%; overflow-x: hidden; overflow-y: auto;
+	padding: 0px;
+}
+
 .maindiv {
 	margin: auto;
 	width: 75%;

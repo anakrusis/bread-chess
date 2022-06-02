@@ -231,7 +231,7 @@ class GameServer {
 		
 	}
 	
-	getValidSpaces( piece, moves ){
+/* 	getValidSpaces( piece, moves ){
 		
 		var output = [];
 		
@@ -282,7 +282,7 @@ class GameServer {
 		}
 		
 		return output;
-	}
+	} */
 	
 	getPlayerFromSocket(socket_in){
 		for (var i in this.players){
