@@ -70,6 +70,14 @@ class GameServer {
 					} */
 					console.log("");
 					break;
+					
+				// just a debug function, dont call this in the middle of a game or it will mess things up
+				case "/roll":
+					for (var index in gameserver.games){
+						var g = gameserver.games[index];
+						console.log(g.roll());
+					}
+					break;
 			}
 		});
 		
@@ -131,6 +139,7 @@ class GameServer {
 				if (expectedpiececolor != g.board[piecex][piecey].charAt(0)){ return; }
 				
 				var moves = g.getValidMoves(piecex, piecey);
+				moves = g.trimMovesByBread(moves);
 				socket.emit("validMoves", moves);
 			});
 			
@@ -146,6 +155,8 @@ class GameServer {
 				
 				// looks for legal move
 				var moves = g.getValidMoves(startx, starty);
+				moves = g.trimMovesByBread(moves);
+				
 				var valid = false;
 				for (var i = 0; i < moves.length; i++){
 					if ( moves[i][0] == targetx && moves[i][1] == targety ){ valid = true; break; }
@@ -211,6 +222,10 @@ class GameServer {
 				
 				if (gameovertype){
 					g.end(gameovertype, winnerindex);
+				}else{
+				// if the game is still going on, we roll the bread for the next players turn
+					g.bread = [g.roll(), g.roll()];
+					io.to(g.id).emit("breadRoll", g.bread);
 				}
 			});
 			

@@ -46,8 +46,11 @@ input:hover {
 	padding: 10px;
 }
 
+.padding1 {
+	text-align: center;
+}
+
 h1 {
-	line-height: 1px; 
 }
 
 .bodydiv {

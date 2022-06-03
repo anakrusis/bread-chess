@@ -104,11 +104,9 @@ function draw(){
 			var sy = j * (height/8);
 			
 			if (( i + j ) % 2 == 1){
-				//fill("#B58863");
-				fill("#992222");
+				fill("#B58863");
 			}else{
-				//fill("#F0D9B5");
-				fill("#aa2222");
+				fill("#F0D9B5");
 			}
 			rect(sx,sy,width/8,height/8);
 		}

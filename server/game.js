@@ -14,6 +14,8 @@ class Game {
 		this.moldytimers = [];
 		this.turn = 0; // index of the player whose turn it is
 		
+		this.bread = null; // will be replaced with a string indicating the state of the bread at this moment
+		
 		this.MOVESET = {
 			"b": [[1,1],[2,2],[3,3],[4,4],[5,5],[6,6],[7,7],[8,8]],
 			"k"  : [[1,1],[0,1]],
@@ -72,6 +74,10 @@ class Game {
 		io.to(this.id).emit("gameStart", this.players);
 		io.to(this.id).emit("boardUpdate", this.board);
 		io.to(this.id).emit("nameUpdate", this.getPlayerNames());
+		
+		// the bread should be rolled the initial time
+		this.bread = [this.roll(), this.roll()];
+		io.to(this.id).emit("breadRoll", this.bread);
 	}
 	
 	newBoard(fen){
@@ -84,8 +90,6 @@ class Game {
 			var ch = fen.charAt(i);
 			// fen format has several sections seperated by spaces. they are:
 			if (ch == " "){ section++; continue; }
-			
-			console.log(currx + " " + curry);
 			
 			// out of bounds?? this cant be a valid fen!
 			if (curry > 7 || curry < 0 || currx > 8 || currx < 0){ return false; }
@@ -105,7 +109,7 @@ class Game {
 					
 				// everything else could be a piece letter, so we check for those
 				}else{
-					var lower = ch.toLowerCase(); console.log(lower);
+					var lower = ch.toLowerCase();
 					var newpiece;
 					if (validpieces.indexOf(lower) != -1){
 						// lowercase characters are black pieces and uppercase are white pieces
@@ -368,9 +372,90 @@ class Game {
 		console.log("length after redundant trim: " + out.length);
 		console.log(" ");
 		
-		// TODO roll the bread now, after all legal moves are found, so that the outcome can be confirmedly one of these legal moves
-		
 		return out;
+	}
+	
+	roll(){
+		var num = Math.floor(Math.random() * 16) + 2;
+		if (num == 17){
+			// special bread has a 1/16 chance for now
+			// (I changed it so that the 1 bread doesnt have a disproportionate low number, which would
+			// affect the chances of a-file and 1-rank stuff)
+			if (Math.random() < 1/3){
+				return "special" + Math.floor( 7 * Math.random() + 1 );
+			}
+		}
+		return Math.floor(num / 2);
+	}
+	
+	// given a bread roll, returns the legal squares that the bread roll limits the moves to
+	getLegalSquares(bread){
+		var legalsquares = [];
+			
+		// x values (y values not decided yet are set to null for now)
+		if (parseInt(bread[0])){
+			legalsquares.push( [ bread[0] - 1, null ] );
+		}else{
+			for (var i = 0; i < 8; i++){
+				legalsquares.push( [ i, null ] );
+			}
+		}
+		var lengthbefore = legalsquares.length; // to prevent infinite loops you know
+		
+		// y values (those null values are now replaced)
+		if (parseInt(bread[1])){
+			for (var i = 0; i < lengthbefore; i++){
+				legalsquares[i][1] = bread[1] - 1;
+				legalsquares.push([ legalsquares[i][0], 7 - legalsquares[i][1] ]);
+			}
+		}else{
+			for (var i = 0; i < lengthbefore; i++){
+				legalsquares[i][1] = 0;
+				for (var j = 1; j < 8; j++){
+					legalsquares.push( [ legalsquares[i][0], j ] );
+				}
+			}
+		}
+		console.log("legal squares:");
+		for (var i = 0; i < legalsquares.length; i++){
+			console.log("x: " + legalsquares[i][0] + " y: " + legalsquares[i][1]);
+		}
+		return legalsquares;
+	}
+	
+	// removes moves from the list which are not approved by the bread
+	trimMovesByBread(moves){
+		var legalsquares = this.getLegalSquares( this.bread );
+		var newmoves = [];
+		for (var i = 0; i < moves.length; i++){
+			
+			var allowed = false;
+			for (var j = 0; j < legalsquares.length; j++){
+				if ( moves[i][0] == legalsquares[j][0] && moves[i][1] == legalsquares[j][1] ){
+					allowed = true; break;
+				}
+			}
+			if (allowed){
+				newmoves.push( moves[i] );
+			}
+		}
+		console.log("length after bread trim: " + newmoves.length);
+		return newmoves;
+	}
+	
+	rollUntilLegal(){
+		// there are only 64 possible squares, so i think this is a fair amount of tries to hopefully exhaust all possibilities
+		// TODO maybe we can shuffle a list with the 64 squares to avoid any redundant move calculation (might have to rewrite bread func to do it)
+		
+		for (var q = 0; i < 300; i++){
+			var bread = [this.roll(), this.roll()];
+			var legalsquares = this.getLegalSquares(bread);
+			
+			// now that the legalsquares table is finished, we begin trying to find moves for it
+			for (var i = 0; i < legalsquares.length; i++){
+				
+			}
+		}
 	}
 	
 	// closes the sockets and ends the game

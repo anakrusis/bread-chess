@@ -120,8 +120,53 @@ class Client {
 				client.validmoves = moves;
 			});
 			
+			this.on("breadRoll", function(bread){
+				console.log("bread rolled " + bread[0] + " " + bread[1]);
+				client.bread = bread;
+				// todo animation timer for the bread
+				
+				var padding = document.getElementById("padding1");
+				padding.innerHTML = "";
+				for (var i = 0; i < bread.length; i++){
+					if (parseInt(bread[i])){
+						padding.innerHTML += "🍞".repeat(bread[i]) + "<br>";
+					}
+				}
+				// game coordinates
+				var alphabet = ["a","b","c","d","e","f","g","h"];
+				var coordstring1 = ""; var coordstring2 = "";
+				if (parseInt(bread[0])){
+					coordstring1 = alphabet[bread[0] - 1];
+					coordstring2 = alphabet[bread[0] - 1];
+				}else{
+					coordstring1 = "*"; coordstring2 = "*";
+				}
+				if (parseInt(bread[1])){
+					coordstring1 += "" + bread[1];
+					coordstring2 += "" + Math.abs(9 - bread[1]);
+				}else{
+					coordstring1 += "*"; coordstring2 += "*";
+				}
+				padding.innerHTML += coordstring1 + "/" + coordstring2;
+				
+				padding.innerHTML = "<h1>" + padding.innerHTML + "</h1>";
+			});
+			
 			this.on("gameEnd", function( endingtype, winnerindex ){
 				console.log(endingtype + ", " + winnerindex);
+				var padding = document.getElementById("padding1");
+				
+				var victorystring1 = ""; var victorystring2 = "";
+				victorystring1 += winnerindex == 0 ? 1 : 0;
+				victorystring1 += "-";
+				victorystring1 += winnerindex == 1 ? 1 : 0;
+				victorystring1 = "<h1>" + victorystring1 + "</h1>";
+				
+				victorystring2 += winnerindex == 0 ? "White" : "Black";
+				victorystring2 += " is victorious";
+				victorystring2 = "<h3>" + victorystring2 + "</h3>";
+				
+				padding.innerHTML = victorystring1 + "<br>" + victorystring2;
 			});
 		});
 	}
