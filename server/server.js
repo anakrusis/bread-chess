@@ -71,7 +71,7 @@ class GameServer {
 					console.log("");
 					break;
 					
-				// just a debug function, dont call this in the middle of a game or it will mess things up
+				// just a debug function, doesnt do anything
 				case "/roll":
 					for (var index in gameserver.games){
 						var g = gameserver.games[index];
@@ -224,7 +224,7 @@ class GameServer {
 					g.end(gameovertype, winnerindex);
 				}else{
 				// if the game is still going on, we roll the bread for the next players turn
-					g.bread = [g.roll(), g.roll()];
+					g.bread = g.rollUntilLegal();
 					io.to(g.id).emit("breadRoll", g.bread);
 				}
 			});

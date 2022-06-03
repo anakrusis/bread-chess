@@ -16,6 +16,16 @@ class Client {
 		
 		this.centertext = "Welcome to Bread Chess!";
 		this.nextcell = null; // cell in the moves table to be updated next
+		
+		this.icons = {
+			special1: "🥯",
+			special2: "🥙",
+			special3: "🥪",
+			special4: "🥐",
+			special5: "🥖",
+			special6: "🥞",
+			special7: "🧇"
+		}
 	}
 
 	init(){
@@ -130,6 +140,8 @@ class Client {
 				for (var i = 0; i < bread.length; i++){
 					if (parseInt(bread[i])){
 						padding.innerHTML += "🍞".repeat(bread[i]) + "<br>";
+					}else{
+						padding.innerHTML += client.icons[bread[i]] + "<br>";
 					}
 				}
 				// game coordinates

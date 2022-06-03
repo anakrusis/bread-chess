@@ -76,7 +76,7 @@ class Game {
 		io.to(this.id).emit("nameUpdate", this.getPlayerNames());
 		
 		// the bread should be rolled the initial time
-		this.bread = [this.roll(), this.roll()];
+		this.bread = this.rollUntilLegal();
 		io.to(this.id).emit("breadRoll", this.bread);
 	}
 	
@@ -389,7 +389,7 @@ class Game {
 	}
 	
 	// given a bread roll, returns the legal squares that the bread roll limits the moves to
-	getLegalSquares(bread){
+	getLegalSquaresByBread(bread){
 		var legalsquares = [];
 			
 		// x values (y values not decided yet are set to null for now)
@@ -425,7 +425,7 @@ class Game {
 	
 	// removes moves from the list which are not approved by the bread
 	trimMovesByBread(moves){
-		var legalsquares = this.getLegalSquares( this.bread );
+		var legalsquares = this.getLegalSquaresByBread( this.bread );
 		var newmoves = [];
 		for (var i = 0; i < moves.length; i++){
 			
@@ -447,15 +447,45 @@ class Game {
 		// there are only 64 possible squares, so i think this is a fair amount of tries to hopefully exhaust all possibilities
 		// TODO maybe we can shuffle a list with the 64 squares to avoid any redundant move calculation (might have to rewrite bread func to do it)
 		
-		for (var q = 0; i < 300; i++){
-			var bread = [this.roll(), this.roll()];
-			var legalsquares = this.getLegalSquares(bread);
+		// Also this is the most insane nested loop disaster i have ever done
+		
+		var bread;
+		for (var q = 0; q < 300; q++){
+			bread = [this.roll(), this.roll()];
+			var legalsquares = this.getLegalSquaresByBread(bread);
 			
-			// now that the legalsquares table is finished, we begin trying to find moves for it
+			// we will look at every one of our pieces until we find one that can go to any one of the legal squares
+			var legalmovefound = false;
 			for (var i = 0; i < legalsquares.length; i++){
+				
+				for (var x = 0; x < 8; x++){
+					for (var y = 0; y < 8; y++){
+						var currpiece = this.board[x][y];
+						// if no piece, or not our piece then we skip
+						if (!currpiece){ continue; }
+						var currpiececolor = this.board[x][y].charAt(0);
+						var expectedcolor = this.turn == 0 ? "w" : "b";
+						if (currpiececolor != expectedcolor){ continue; }
+						
+						var currpiecemoves = this.getValidMoves(x,y);
+						for (var z = 0; z < currpiecemoves.length; z++){
+							
+							if (legalsquares[i][0] == currpiecemoves[z][0] && legalsquares[i][1] == currpiecemoves[z][1]){
+								
+								console.log("legal move found from bread. piece at " + x + ", " + y);
+								legalmovefound = true;
+								return bread;
+							}
+						}
+					}
+				}
 				
 			}
 		}
+		// TODO no legal moves is probably stalemate
+		//
+		console.log("bread permits no moves");
+		return false;
 	}
 	
 	// closes the sockets and ends the game
