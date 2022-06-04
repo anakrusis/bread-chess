@@ -77,7 +77,8 @@ class Game {
 		
 		// the bread should be rolled the initial time
 		this.bread = this.rollUntilLegal();
-		io.to(this.id).emit("breadRoll", this.bread);
+		var legalsquares = this.getLegalSquaresByBread(this.bread);
+		io.to(this.id).emit("breadRoll", this.bread, legalsquares);
 	}
 	
 	newBoard(fen){

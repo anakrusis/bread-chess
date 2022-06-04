@@ -225,16 +225,26 @@ class GameServer {
 				}else{
 				// if the game is still going on, we roll the bread for the next players turn
 					g.bread = g.rollUntilLegal();
-					io.to(g.id).emit("breadRoll", g.bread);
+					var legalsquares = g.getLegalSquaresByBread(g.bread);
+					io.to(g.id).emit("breadRoll", g.bread, legalsquares);
 				}
 			});
 			
 			socket.on("disconnect", function () {
 				var playerLeaving = gameserver.getPlayerFromSocket(this);
-				 
 				if (playerLeaving == -1){ return; };
 				
+				// player forcibly loses if they leave
+				if (playerLeaving.currentgame){
+					var g = gameserver.games[playerLeaving.currentgame];
+					var loserindex = g.players.indexOf(playerLeaving.id);
+					var winnerindex = (loserindex + 1)%2;
+					
+					g.end("abandon",winnerindex);
+				}
+				
 				gameserver.onPlayerLeave(playerLeaving);
+				
 			});
 		
 		});
@@ -245,59 +255,6 @@ class GameServer {
 	update(){
 		
 	}
-	
-/* 	getValidSpaces( piece, moves ){
-		
-		var output = [];
-		
-		for ( var angle = 0; angle < Math.PI * 2; angle += Math.PI/2 ){
-			for (var i = 0; i < moves.length; i++){
-				
-				// Lololol this is trig to rotate the moves in all four directions
-				var mx = Math.round((moves[i][0]) * Math.cos(angle) - (moves[i][1]) * Math.sin(angle));
-				var my = Math.round((moves[i][0]) * Math.sin(angle) + (moves[i][1]) * Math.cos(angle));
-				
-				var xcoeff = Math.sign(mx); var ycoeff = Math.sign(my);
-				
-				var p = this.getPiece(piece.x + mx, piece.y + my);
-				if (p){
-					if (p.playerUUID == piece.playerUUID){
-						continue;
-					}
-				}
-				
-				// Knights can hop over other pieces so they need not check for obstructions
-				if (piece.piecetype == "knight"){ output.push([ piece.x + mx , piece.y + my ]); continue; }
-				
-				// This loop checks for pieces between the current space and the target space
-				var obstructed = false;
-				var currentx = piece.x; var currenty = piece.y;
-				var count = 0;
-				while ( currentx != piece.x + mx || currenty != piece.y + my ){
-					
-					currentx += xcoeff; currenty += ycoeff;
-					
-					var p = this.getPiece( currentx, currenty );
-					if (p){
-						if (p.playerUUID != piece.playerUUID){
-							output.push([ currentx , currenty ]);
-						}
-						obstructed = true; break;
-					}
-					
-					// There is no reason for any piece to move 15 spaces out
-					// It's just a preventative measure in case the loop might get stuck infinitely going out
-					count++; if (count > 15){ break; }
-				}
-				
-				if (obstructed){ continue; }
-				
-				output.push([ piece.x + mx , piece.y + my ]);
-			}
-		}
-		
-		return output;
-	} */
 	
 	getPlayerFromSocket(socket_in){
 		for (var i in this.players){

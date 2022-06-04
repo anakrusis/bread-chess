@@ -139,6 +139,16 @@ function draw(){
 		fill(0,160,0,90)
 		circle(mx + width/16,my + width/16,width/28);
 	}
+	// legal square indicator square
+	for (var i = 0; i < client.legalsquares.length; i++){
+		var cm = client.legalsquares[i];
+		var mx = client.coordToScreenX( cm[0] ); 
+		var my = client.coordToScreenY( cm[1] );
+		
+		noFill();
+		stroke(0,255,0,90);
+		rect(mx,my,width/8,height/8);
+	}
 	
 	// dragging indicator square
 	if (client.pieceDraggedX != null){

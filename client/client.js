@@ -11,6 +11,7 @@ class Client {
 		this.pieceSelectedX = null; this.pieceSelectedY = null;
 		this.pieceDraggedX = null; this.pieceDraggedY = null;
 		this.validmoves = []; // just for display purposes
+		this.legalsquares = [];
 		
 		this.mousestartx = null; this.mousestarty = null;
 		
@@ -130,9 +131,10 @@ class Client {
 				client.validmoves = moves;
 			});
 			
-			this.on("breadRoll", function(bread){
+			this.on("breadRoll", function(bread, legalsquares){
 				console.log("bread rolled " + bread[0] + " " + bread[1]);
 				client.bread = bread;
+				client.legalsquares = legalsquares;
 				// todo animation timer for the bread
 				
 				var padding = document.getElementById("padding1");

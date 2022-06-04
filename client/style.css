@@ -23,7 +23,6 @@ input:hover {
 	background-color: #445566;
 }
 .moves{
-	display:flex;
 }
 
 .leftmoves, .rightmoves{
